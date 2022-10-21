@@ -12,7 +12,7 @@ file_name = sys.argv[1]
 file = open(file_name) # ==> If we print this, it will give us file type and encoding (for capstone)
 
 txt = file.read()
-print(txt)
+print("Text from File: ", txt)
 
 # Split line into two (source & dest)
 source_addr = txt.split()[0]
@@ -22,10 +22,22 @@ print("Destination Address: ", destination_addr)
 
 # Function to convert dots and numbers (IP Addys) to bytestrings
 def ip_to_bytestring(ip_addr):
-	array_of_bytes = ip_addr.split('.')
-	print("Array of Bytes", array_of_bytes)
+
+	array_str = ip_addr.split('.') # ==> Split on the period to get an array of numbers in str format
+	string_of_bytes = b''
+
+	print("Array of Numbers in String Format", array_str)
+
+	# For loop that iterates the array of str nums and converts them to bytes and stores them in a bytestring
+	for s in array_str:
+		get_int = int(s)
+		byte = get_int.to_bytes(1, 'big')
+		string_of_bytes += byte 
+	print("String of Bytes: ", string_of_bytes)
+
 
 # Read in .dat files
+
 
 
 # Function to generate IP psuedoheader bytes from the IP Address given from .txt & the TCP header length from .dat
