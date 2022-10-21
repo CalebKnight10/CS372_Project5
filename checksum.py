@@ -8,13 +8,22 @@ import sys
 
 
 # Read in .txt files
+file_name = sys.argv[1]
+file = open(file_name) # ==> If we print this, it will give us file type and encoding (for capstone)
 
+txt = file.read()
+print(txt)
 
 # Split line into two (source & dest)
-
+source_addr = txt.split()[0]
+destination_addr = txt.split()[1]
+print("Source Address: ", source_addr)
+print("Destination Address: ", destination_addr)
 
 # Function to convert dots and numbers (IP Addys) to bytestrings
-
+def ip_to_bytestring(ip_addr):
+	array_of_bytes = ip_addr.split('.')
+	print("Array of Bytes", array_of_bytes)
 
 # Read in .dat files
 
@@ -37,3 +46,4 @@ import sys
 # Compare the two
 	# If they match: success
 	# Else: fail
+ip_to_bytestring(source_addr)
