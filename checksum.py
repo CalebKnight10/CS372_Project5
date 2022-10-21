@@ -63,7 +63,7 @@ def gen_pseudoheader(source_addr, destination_addr, tcp_length):
 	source_len = ip_to_bytestring(source_addr)
 	dest_len = ip_to_bytestring(destination_addr)
 
-	psuedoheader = b''
+	global psuedoheader
 
 	# Check for type of vars (need bytes)
 	# print("PTCL len type: ", type(ptcl_bytes))
@@ -79,18 +79,20 @@ def gen_pseudoheader(source_addr, destination_addr, tcp_length):
 
 	byte_len_ip = source_len + dest_len
 	psuedoheader = byte_len_ip + zero_byte + ptcl_bytes + tcp_length_bytes
-	print("Pseduoheader: ", psuedoheader)
+	print("Psuedoheader: ", psuedoheader)
 	print("Length of psuedoheader: ", len(psuedoheader))
 	return psuedoheader
 
 # Get the checksum from the tcp data
 def get_checksum(tcp_data):
-    checksum = int.from_bytes(tcp_data[16:18], 'big')
-    print ("Checksum: ", checksum)
-    return checksum
+	global checksum
+	checksum = int.from_bytes(tcp_data[16:18], 'big')
+	print ("Checksum: ", checksum)
+	return checksum
 
 # Build replica of TCP data with checksum set to 0 (16 and 17th byte is checksum)
 def gen_zero_checksum(tcp_data):
+	global tcp_zero_cksum
 	tcp_zero_cksum = tcp_data[:16] + b'\x00\x00' + tcp_data[18:]
 	if len(tcp_zero_cksum) % 2 == 1:
 		tcp_zero_cksum += b'\x00'
@@ -100,12 +102,13 @@ def gen_zero_checksum(tcp_data):
 
 # Concat pseudoheader and TCP data with zeroed checksum
 def mathing(psuedoheader, tcp_zero_cksum):
+    global total
     our_data = psuedoheader + tcp_zero_cksum
     offset = 0
     total = 0
 
     while offset < len(our_data):
-    	word = int.from_bytes(data[offset:offset + 2], 'big')
+    	word = int.from_bytes(our_data[offset:offset + 2], 'big')
     	total += word
     	total = (total & 0xffff) + (total >> 16)  # carry around
     	offset += 2   # Go to the next 2-byte value
@@ -118,6 +121,11 @@ gen_pseudoheader(source_addr, destination_addr, tcp_length)
 get_checksum(tcp_data)
 gen_zero_checksum(tcp_data)
 mathing(psuedoheader, tcp_zero_cksum)
+
+if total == checksum:
+	print('PASS')
+else:
+	print('FAIL')
 # Compare the two
 # If they match: success
 # Else: fail
