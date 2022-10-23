@@ -9,23 +9,28 @@ import re
 
 
 # Read in .txt files
-if ".txt" in sys.argv[1] or ".txt" in sys.argv[2]:
-	text_file_name = sys.argv[1]
-	txt_file = open(text_file_name) # ==> If we print this, it will give us file type and encoding (for capstone)
-	
+def open_txt(file_num):
+	global source_addr
+	global destination_addr
+
+	text_file_name = "tcp_addrs_"
+	txt_file = open("tcp_data/" + text_file_name + str(file_num) + ".txt") # ==> If we print this, it will give us file type and encoding (for capstone)
 	txt = txt_file.read()
 	print(txt)
-
 	# Split input into two (source & dest)
 	source_addr = txt.split()[0]
 	destination_addr = txt.split()[1]
 	print("Source Address: ", source_addr)
 	print("Destination Address: ", destination_addr)
 
+
 # Read in .dat files
-if ".dat" in sys.argv[2] or ".dat" in sys.argv[1]:
-	data_file_name = sys.argv[1]
-	with open(data_file_name, "rb") as fp:
+def open_data(file_num):
+	global tcp_data
+	global tcp_length
+	
+	data_file_name = "tcp_data_"
+	with open("tcp_data/" + data_file_name + str(file_num) + ".dat", "rb") as fp:
 		tcp_data = fp.read()
 		tcp_length = len(tcp_data)  # <-- length
 		print("TCP Data: ", tcp_data)
@@ -37,16 +42,16 @@ def ip_to_bytestring(ip_addr):
 	array_str = ip_addr.split('.') # ==> Split on the period to get an array of numbers in str format
 	string_of_bytes = b''
 
-	print("Array of Numbers in String Format", array_str)
+	# print("Array of Numbers in String Format", array_str)
 
 	# For loop that iterates the array of str nums and converts them to bytes and stores them in a bytestring
 	for s in array_str:
 		get_int = int(s)
-		print("Int: ", get_int)
+		# print("Int: ", get_int)
 		byte = get_int.to_bytes(1, 'big')
-		print("Bytes: ", byte)
+		# print("Bytes: ", byte)
 		string_of_bytes += byte 
-		print("String of Bytes: ", string_of_bytes)
+		# print("String of Bytes: ", string_of_bytes)
 	return string_of_bytes
 
 
@@ -71,15 +76,15 @@ def gen_pseudoheader(source_addr, destination_addr, tcp_length):
 	# print("IP addr Len type: ", type(byte_len_ip))
 	# print("TCP Len type: ", type(tcp_length_bytes))
 
-	print("Zero len: ", zero_byte)
-	print("PTCL len: ", ptcl_bytes)
-	print("TCP len: ", tcp_length_bytes)
-	print("Source len: ", source_len)
-	print("Dest len: ", dest_len)
+	# print("Zero len: ", zero_byte)
+	# print("PTCL len: ", ptcl_bytes)
+	# print("TCP len: ", tcp_length_bytes)
+	# print("Source len: ", source_len)
+	# print("Dest len: ", dest_len)
 
 	byte_len_ip = source_len + dest_len
 	psuedoheader = byte_len_ip + zero_byte + ptcl_bytes + tcp_length_bytes
-	print("Psuedoheader: ", psuedoheader)
+	# print("Psuedoheader: ", psuedoheader)
 	print("Length of psuedoheader: ", len(psuedoheader))
 	return psuedoheader
 
@@ -116,19 +121,25 @@ def mathing(psuedoheader, tcp_zero_cksum):
     return (~total) & 0xffff  # one's complement
 
 
-ip_to_bytestring(source_addr)
-gen_pseudoheader(source_addr, destination_addr, tcp_length)
-get_checksum(tcp_data)
-gen_zero_checksum(tcp_data)
-mathing(psuedoheader, tcp_zero_cksum)
 
-if total == checksum:
-	print('PASS')
-else:
-	print('FAIL')
-# Compare the two
-# If they match: success
-# Else: fail
+
+file_num = 0
+
+for file_num in range(2):
+	open_txt(file_num)
+	open_data(file_num)
+	ip_to_bytestring(source_addr)
+	gen_pseudoheader(source_addr, destination_addr, tcp_length)
+	get_checksum(tcp_data)
+	gen_zero_checksum(tcp_data)
+	mathing(psuedoheader, tcp_zero_cksum)
+
+	if total == checksum:
+		print("File " + str(file_num) + ": " + "PASS")
+	else:
+		print("File " + str(file_num) + ": " + "FAIL")
+
+	file_num += 1
 
 
 
