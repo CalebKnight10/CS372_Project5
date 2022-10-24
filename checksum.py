@@ -1,6 +1,6 @@
-# Caleb Knight
-# Small project to mimic checksums
-# CS 372
+# # Caleb Knight
+# # Small project to mimic checksums
+# # CS 372
 
 
 import socket
@@ -16,24 +16,24 @@ def open_txt(file_num):
 	text_file_name = "tcp_addrs_"
 	txt_file = open("tcp_data/" + text_file_name + str(file_num) + ".txt") # ==> If we print this, it will give us file type and encoding (for capstone)
 	txt = txt_file.read()
-	print(txt)
+	# print(txt)
 	# Split input into two (source & dest)
 	source_addr = txt.split()[0]
 	destination_addr = txt.split()[1]
-	print("Source Address: ", source_addr)
-	print("Destination Address: ", destination_addr)
+	# print("Source Address: ", source_addr)
+	# print("Destination Address: ", destination_addr)
 
 
 # Read in .dat files
 def open_data(file_num):
 	global tcp_data
 	global tcp_length
-	
+
 	data_file_name = "tcp_data_"
 	with open("tcp_data/" + data_file_name + str(file_num) + ".dat", "rb") as fp:
 		tcp_data = fp.read()
 		tcp_length = len(tcp_data)  # <-- length
-		print("TCP Data: ", tcp_data)
+		# print("TCP Data: ", tcp_data)
 
 
 # Function to convert dots and numbers (IP Addys) to bytestrings
@@ -48,7 +48,7 @@ def ip_to_bytestring(ip_addr):
 	for s in array_str:
 		get_int = int(s)
 		# print("Int: ", get_int)
-		byte = get_int.to_bytes(1, 'big')
+		byte = int(s).to_bytes(1, 'big')
 		# print("Bytes: ", byte)
 		string_of_bytes += byte 
 		# print("String of Bytes: ", string_of_bytes)
@@ -58,17 +58,15 @@ def ip_to_bytestring(ip_addr):
 # Function to generate IP psuedoheader bytes from the IP Address given from .txt & the TCP header length from .dat
 def gen_pseudoheader(source_addr, destination_addr, tcp_length):
 
+	global psuedoheader
+
 	# Covert all to bytes
-	zero = 1
-	ptcl = 6
 	tcp_new_length = tcp_length
-	zero_byte = zero.to_bytes(1, 'big')
-	ptcl_bytes = ptcl.to_bytes(1, 'big')
+	zero_byte = b'\x00'
+	ptcl_bytes = b'\x06'
 	tcp_length_bytes = tcp_new_length.to_bytes(2, 'big')
 	source_len = ip_to_bytestring(source_addr)
 	dest_len = ip_to_bytestring(destination_addr)
-
-	global psuedoheader
 
 	# Check for type of vars (need bytes)
 	# print("PTCL len type: ", type(ptcl_bytes))
@@ -85,14 +83,14 @@ def gen_pseudoheader(source_addr, destination_addr, tcp_length):
 	byte_len_ip = source_len + dest_len
 	psuedoheader = byte_len_ip + zero_byte + ptcl_bytes + tcp_length_bytes
 	# print("Psuedoheader: ", psuedoheader)
-	print("Length of psuedoheader: ", len(psuedoheader))
+	# print("Length of psuedoheader: ", len(psuedoheader))
 	return psuedoheader
 
 # Get the checksum from the tcp data
 def get_checksum(tcp_data):
 	global checksum
 	checksum = int.from_bytes(tcp_data[16:18], 'big')
-	print ("Checksum: ", checksum)
+	# print ("Checksum: ", checksum)
 	return checksum
 
 # Build replica of TCP data with checksum set to 0 (16 and 17th byte is checksum)
@@ -102,48 +100,39 @@ def gen_zero_checksum(tcp_data):
 	if len(tcp_zero_cksum) % 2 == 1:
 		tcp_zero_cksum += b'\x00'
 
-	print("Zeroed checksum: ", tcp_zero_cksum)
+	# print("Zeroed checksum: ", tcp_zero_cksum)
 	return tcp_zero_cksum
 
 # Concat pseudoheader and TCP data with zeroed checksum
 def mathing(psuedoheader, tcp_zero_cksum):
-    global total
     our_data = psuedoheader + tcp_zero_cksum
+    # print("Our data: ", our_data)
     offset = 0
     total = 0
 
     while offset < len(our_data):
-    	word = int.from_bytes(our_data[offset:offset + 2], 'big')
+    	word = int.from_bytes(our_data[offset:offset + 2], "big")
+    	offset += 2 # Go to the next 2-byte value
     	total += word
-    	total = (total & 0xffff) + (total >> 16)  # carry around
-    	offset += 2   # Go to the next 2-byte value
-    print("Total: ", total)
+    	total = (total & 0xffff) + (total >> 16) # Carry around
+    	# print("Total in Loop: ", total)
+    # print("Total: ", total)
     return (~total) & 0xffff  # one's complement
-
-
 
 
 file_num = 0
 
-for file_num in range(2):
+for file_num in range(10):
 	open_txt(file_num)
 	open_data(file_num)
-	ip_to_bytestring(source_addr)
 	gen_pseudoheader(source_addr, destination_addr, tcp_length)
 	get_checksum(tcp_data)
 	gen_zero_checksum(tcp_data)
-	mathing(psuedoheader, tcp_zero_cksum)
 
+	total = mathing(psuedoheader, tcp_zero_cksum)
 	if total == checksum:
-		print("File " + str(file_num) + ": " + "PASS")
+		print("PASS")
 	else:
-		print("File " + str(file_num) + ": " + "FAIL")
+		print("FAIL")
 
 	file_num += 1
-
-
-
-
-
-
-
